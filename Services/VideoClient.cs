@@ -127,12 +127,12 @@ public class VideoClient
         await AuthorizeAsync();
         var queryParams = new Dictionary<string, string>
         {
-            { "includedInsights", "Faces" },
+            { "includedInsights", "Faces,ObservedPeople" },
             { "includeSummarizedInsights", "false" },
             { "accessToken" , _accessToken },
         };
         var queryString = new FormUrlEncodedContent(queryParams).ReadAsStringAsync().Result;
-        var url = $"https://api.videoindexer.ai/{_location}/Accounts/{_accountId}/Videos/{videoId}/Index?queryString";
+        var url = $"https://api.videoindexer.ai/{_location}/Accounts/{_accountId}/Videos/{videoId}/Index?{queryString}";
         var response = await _http.GetAsync(url);
         //TODO: Add error handling
         //TODO: Add pagination
