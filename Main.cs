@@ -22,6 +22,7 @@ internal class Main : IHostedService
         _logger.LogTrace("Main Started");
         //await _videoIndexer.FileUploadAsync("myVideo", "./Data/waiting in line.mp4");
         await _videoIndexer.ListVideosAsync();
+        await _videoIndexer.GetVideoIndexAsync("3jq0p0vhsl");
         _logger.LogTrace("done");
         await StopAsync(cancellationToken);
     }

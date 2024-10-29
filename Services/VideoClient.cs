@@ -122,4 +122,28 @@ public class VideoClient
             Console.WriteLine($"Request failed with status code: {response.StatusCode}");
         }
     }
+    public async Task GetVideoIndexAsync(string videoId)
+    {
+        await AuthorizeAsync();
+        var queryParams = new Dictionary<string, string>
+        {
+            { "includedInsights", "Faces" },
+            { "includeSummarizedInsights", "false" },
+            { "accessToken" , _accessToken },
+        };
+        var queryString = new FormUrlEncodedContent(queryParams).ReadAsStringAsync().Result;
+        var url = $"https://api.videoindexer.ai/{_location}/Accounts/{_accountId}/Videos/{videoId}/Index?queryString";
+        var response = await _http.GetAsync(url);
+        //TODO: Add error handling
+        //TODO: Add pagination
+        if (response.IsSuccessStatusCode)
+        {
+            var json = await response.Content.ReadAsStringAsync();
+            var results = JsonObject.Parse(json)!["results"]!.AsArray();
+        }
+        else
+        {
+            Console.WriteLine($"Request failed with status code: {response.StatusCode}");
+        }
+    }
 }
