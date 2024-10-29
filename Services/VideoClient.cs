@@ -5,6 +5,7 @@ using System.Text.Json.Nodes;
 using Microsoft.Extensions.Options;
 using VISample.Models;
 using Microsoft.Extensions.Logging;
+using System.Text.Json;
 
 namespace VISample.Services;
 
@@ -17,6 +18,7 @@ public class VideoClient
     private readonly IOptions<VideoIndexerOptions> _options;
     private string _location = String.Empty;
     private string _accountId = String.Empty;
+    private DateTimeOffset _tokenExpiration = DateTime.MinValue;
 
     public VideoClient(
         ILogger<VideoClient> logger,
@@ -30,14 +32,17 @@ public class VideoClient
         _options = options;
     }
 
-    internal async Task AuthorizeAsync(CancellationToken ct = default)
+    private async Task AuthorizeAsync(CancellationToken ct = default)
     {
+        if (_tokenExpiration > DateTime.UtcNow.AddMinutes(5))
+            return;
         try
         {
             //TODO: Use token caching
             var tokenRequestContext = new TokenRequestContext(new[] { "https://management.azure.com/.default" });
             var tokenRequestResult = await _creds.GetTokenAsync(tokenRequestContext, ct);
             _http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", tokenRequestResult.Token);
+            _tokenExpiration = tokenRequestResult.ExpiresOn;
 
             var requestUri = $"https://management.azure.com/subscriptions/{_options.Value.SubscriptionId}/resourcegroups/{_options.Value.ResourceGroup}/providers/Microsoft.VideoIndexer/accounts/{_options.Value.AccountName}/generateAccessToken?api-version={_options.Value.ApiVersion}";
             var result = await _http.PostAsJsonAsync(requestUri, new { scope = "Account", permissionType = "Contributor" }, ct);
@@ -91,5 +96,30 @@ public class VideoClient
         }
         Console.WriteLine($"Request failed with status code: {response.StatusCode}");
         return response.ToString();
+    }
+    public async Task ListVideosAsync()
+    {
+        await AuthorizeAsync();
+        var url = $"https://api.videoindexer.ai/{_location}/Accounts/{_accountId}/Videos?accessToken={_accessToken}";
+        var response = await _http.GetAsync(url);
+        //TODO: Add error handling
+        //TODO: Add pagination
+        if (response.IsSuccessStatusCode)
+        {
+            var json = await response.Content.ReadAsStringAsync();
+            var results = JsonObject.Parse(json)!["results"]!.AsArray();
+            foreach (var video in results)
+            {
+                Console.Write($"{video["id"]!.GetValue<string>()} | ");
+                Console.Write($"{video["state"]!.GetValue<string>()} | ");
+                Console.Write($"{video["name"]!.GetValue<string>()} | ");
+                Console.Write($"{video["description"]!.GetValue<string>()}");
+                Console.WriteLine();
+            }
+        }
+        else
+        {
+            Console.WriteLine($"Request failed with status code: {response.StatusCode}");
+        }
     }
 }

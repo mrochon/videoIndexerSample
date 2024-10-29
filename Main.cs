@@ -20,7 +20,8 @@ internal class Main : IHostedService
     public async Task StartAsync(CancellationToken cancellationToken)
     {
         _logger.LogTrace("Main Started");
-        await _videoIndexer.FileUploadAsync("myVideo", "./Data/waiting in line.mp4");
+        //await _videoIndexer.FileUploadAsync("myVideo", "./Data/waiting in line.mp4");
+        await _videoIndexer.ListVideosAsync();
         _logger.LogTrace("done");
         await StopAsync(cancellationToken);
     }
