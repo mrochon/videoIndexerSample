@@ -3,3 +3,4 @@ opencv-python
 openai
 requests
 azure.identity
+azure-ai-vision-imageanalysis
